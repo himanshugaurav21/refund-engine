@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+dist/
+.databricks/
+*.egg-info/
+.env
+config.env
+/tmp/
+.DS_Store
+frontend/dist/
