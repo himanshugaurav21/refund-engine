@@ -28,6 +28,7 @@ Foundation Model API ─────────────┐                �
 ```
 refund-engine/
 ├── config.env.template           # Configuration template (copy to config.env)
+├── deploy_from_workspace.py      # Deployment notebook (run from Databricks workspace)
 ├── generate_data.py              # Synthetic data generation (Polars + NumPy)
 ├── pipeline_notebook.py          # DLT pipeline (Bronze → Silver → Gold)
 ├── scripts/
@@ -67,19 +68,22 @@ refund-engine/
                 └── Feedback.tsx
 ```
 
-## Quick Start
+## Deployment Options
 
-### Prerequisites
+### Option A: Deploy from Databricks Workspace (Recommended)
 
-- [Databricks CLI](https://docs.databricks.com/en/dev-tools/cli/install.html) configured with a profile
-- A Databricks workspace with:
-  - Serverless SQL Warehouse
-  - Foundation Model endpoint (e.g., `databricks-claude-sonnet-4`)
-  - Unity Catalog enabled
-- Node.js 18+ (for frontend build)
-- Python 3.10+
+No local setup required — deploy directly from any Databricks workspace.
 
-### Setup
+1. **Clone the repo** via Git Folders: Workspace > Git Folders > Add Git Folder
+2. **Open** `deploy_from_workspace` notebook
+3. **Set the `warehouse_id` widget** to your SQL Warehouse ID
+4. **Run All** — the notebook handles all 7 phases automatically
+
+The notebook auto-detects your user, workspace host, and auth context.
+
+### Option B: Deploy from Local Machine
+
+Requires Databricks CLI, Node.js 18+, and Python 3.10+.
 
 ```bash
 # 1. Clone and configure
@@ -92,7 +96,9 @@ source config.env
 bash scripts/deploy_all.sh
 ```
 
-The `deploy_all.sh` script handles:
+### What gets deployed (both options)
+
+Both deployment methods handle:
 1. Catalog and schema creation
 2. Synthetic data generation and upload
 3. DLT pipeline deployment and execution
