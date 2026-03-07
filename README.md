@@ -2,6 +2,9 @@
 
 AI-augmented refund abuse detection and decisioning platform built on Databricks. Combines deterministic risk scoring with LLM-powered explanations to help Customer Service Representatives triage refund requests faster and more consistently.
 
+<video src="https://github.com/user-attachments/assets/9653b414-987c-49f6-ae2e-f1d438cb51c3" controls width="100%"></video>
+
+
 ## Architecture
 
 ```
