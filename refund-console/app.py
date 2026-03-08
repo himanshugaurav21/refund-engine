@@ -13,6 +13,9 @@ try:
 except ImportError:
     HAS_MLFLOW = False
 
+from server.config import (
+    get_workspace_host, IS_DATABRICKS_APP, refresh_databricks_token,
+)
 from server.routes.dashboard import router as dashboard_router
 from server.routes.cases import router as cases_router
 from server.routes.actions import router as actions_router
@@ -28,13 +31,9 @@ async def lifespan(app: FastAPI):
         print("MLFLOW_EXPERIMENT_NAME not set — tracing disabled")
     elif HAS_MLFLOW:
         try:
-            from server.config import get_workspace_host, get_oauth_token, IS_DATABRICKS_APP
             host = get_workspace_host()
-            # Set Databricks auth env vars for MLflow
             os.environ["DATABRICKS_HOST"] = host
-            if IS_DATABRICKS_APP:
-                # On Databricks Apps, use the SDK-managed token
-                os.environ["DATABRICKS_TOKEN"] = get_oauth_token()
+            refresh_databricks_token()
             mlflow.set_tracking_uri("databricks")
             mlflow.set_experiment(experiment_name)
             mlflow.tracing.enable()
@@ -43,7 +42,6 @@ async def lifespan(app: FastAPI):
             except Exception:
                 pass
             print(f"MLflow tracing enabled — experiment: {experiment_name}")
-            print(f"MLflow tracking URI: {mlflow.get_tracking_uri()}")
             print(f"DATABRICKS_HOST: {host}")
         except Exception as e:
             import traceback

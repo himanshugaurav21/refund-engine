@@ -174,19 +174,37 @@ else
     echo "--- Updating app configuration and redeploying ---"
     APP_DIR="${ROOT_DIR}/refund-console"
 
-    # Update MLFLOW_EXPERIMENT_NAME in app.yaml
+    # Update app.yaml with experiment name, warehouse ID, and Genie Space ID
     python3 -c "
-import sys
+import re
 with open('${APP_DIR}/app.yaml', 'r') as f:
     content = f.read()
-content = content.replace(
-    'name: MLFLOW_EXPERIMENT_NAME\n    value: \"\"',
-    'name: MLFLOW_EXPERIMENT_NAME\n    value: \"${EXPERIMENT_PATH}\"'
+# Update MLFLOW_EXPERIMENT_NAME (regardless of current value)
+content = re.sub(
+    r'(name: MLFLOW_EXPERIMENT_NAME\n\s+value:) .*',
+    r'\1 \"${EXPERIMENT_PATH}\"',
+    content,
 )
+# Ensure DATABRICKS_WAREHOUSE_ID is present
+if 'DATABRICKS_WAREHOUSE_ID' not in content:
+    content = content.rstrip() + '\n  - name: DATABRICKS_WAREHOUSE_ID\n    value: \"${DATABRICKS_WAREHOUSE_ID}\"\n'
+else:
+    content = re.sub(
+        r'(name: DATABRICKS_WAREHOUSE_ID\n\s+value:) .*',
+        r'\1 \"${DATABRICKS_WAREHOUSE_ID}\"',
+        content,
+    )
 # Add GENIE_SPACE_ID if available
 genie_id = '${GENIE_SPACE_ID}'
 if genie_id:
-    content = content.rstrip() + '\n  - name: GENIE_SPACE_ID\n    value: \"' + genie_id + '\"\n'
+    if 'GENIE_SPACE_ID' not in content:
+        content = content.rstrip() + '\n  - name: GENIE_SPACE_ID\n    value: \"' + genie_id + '\"\n'
+    else:
+        content = re.sub(
+            r'(name: GENIE_SPACE_ID\n\s+value:) .*',
+            r'\1 \"' + genie_id + '\"',
+            content,
+        )
 with open('${APP_DIR}/app.yaml', 'w') as f:
     f.write(content)
 "

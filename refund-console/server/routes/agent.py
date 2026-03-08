@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from server.agent import decide
+from server.config import refresh_databricks_token
 
 router = APIRouter(prefix="/api")
 
@@ -15,6 +16,7 @@ class DecideRequest(BaseModel):
 @router.post("/agent/decide")
 def agent_decide(body: DecideRequest):
     try:
+        refresh_databricks_token()
         result = decide(body.refund_id)
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])

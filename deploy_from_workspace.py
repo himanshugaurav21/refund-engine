@@ -720,21 +720,42 @@ else:
 # Update app.yaml with runtime config
 print("--- Updating app.yaml ---")
 
+import re as _re
+
 app_yaml_path = f"{app_source}/app.yaml"
 if os.path.exists(app_yaml_path):
     with open(app_yaml_path, "r") as f:
         app_yaml = f.read()
 
-    # Set MLflow experiment
     experiment_path = f"/Users/{CURRENT_USER}/refund-engine/refund-agent"
-    app_yaml = app_yaml.replace(
-        'name: MLFLOW_EXPERIMENT_NAME\n    value: ""',
-        f'name: MLFLOW_EXPERIMENT_NAME\n    value: "{experiment_path}"'
+
+    # Update MLFLOW_EXPERIMENT_NAME (regardless of current value)
+    app_yaml = _re.sub(
+        r'(name: MLFLOW_EXPERIMENT_NAME\n\s+value:) .*',
+        rf'\1 "{experiment_path}"',
+        app_yaml,
     )
 
-    # Add GENIE_SPACE_ID if not present
-    if "GENIE_SPACE_ID" not in app_yaml and genie_space_id:
-        app_yaml = app_yaml.rstrip() + f'\n  - name: GENIE_SPACE_ID\n    value: "{genie_space_id}"\n'
+    # Ensure DATABRICKS_WAREHOUSE_ID is present
+    if "DATABRICKS_WAREHOUSE_ID" not in app_yaml:
+        app_yaml = app_yaml.rstrip() + f'\n  - name: DATABRICKS_WAREHOUSE_ID\n    value: "{WAREHOUSE_ID}"\n'
+    else:
+        app_yaml = _re.sub(
+            r'(name: DATABRICKS_WAREHOUSE_ID\n\s+value:) .*',
+            rf'\1 "{WAREHOUSE_ID}"',
+            app_yaml,
+        )
+
+    # Add GENIE_SPACE_ID if available
+    if genie_space_id:
+        if "GENIE_SPACE_ID" not in app_yaml:
+            app_yaml = app_yaml.rstrip() + f'\n  - name: GENIE_SPACE_ID\n    value: "{genie_space_id}"\n'
+        else:
+            app_yaml = _re.sub(
+                r'(name: GENIE_SPACE_ID\n\s+value:) .*',
+                rf'\1 "{genie_space_id}"',
+                app_yaml,
+            )
 
     # Write updated yaml and upload
     updated_yaml_path = "/tmp/app.yaml"
@@ -742,7 +763,7 @@ if os.path.exists(app_yaml_path):
         f.write(app_yaml)
 
     upload_file_to_workspace(updated_yaml_path, f"{APP_WORKSPACE_PATH}/app.yaml")
-    print(f"  ✅ app.yaml updated with MLflow experiment and Genie Space ID")
+    print(f"  ✅ app.yaml updated with warehouse ID, MLflow experiment, and Genie Space ID")
 
 # COMMAND ----------
 

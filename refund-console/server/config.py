@@ -57,3 +57,13 @@ def get_warehouse_id() -> str:
 
 def get_catalog() -> str:
     return os.environ.get("REFUND_CATALOG", "refund_decisioning")
+
+
+def refresh_databricks_token():
+    """Refresh DATABRICKS_TOKEN env var for MLflow and other SDK callers.
+
+    SP OAuth tokens expire (~1 h).  Call this before any traced operation
+    so that MLflow's Databricks tracking store always has a valid token.
+    """
+    if IS_DATABRICKS_APP:
+        os.environ["DATABRICKS_TOKEN"] = get_oauth_token()

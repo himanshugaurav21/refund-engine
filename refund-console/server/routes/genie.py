@@ -6,8 +6,14 @@ import requests
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from server.config import get_workspace_host, get_oauth_token
+from server.config import get_workspace_host, get_oauth_token, refresh_databricks_token
 from server.warehouse import execute_query
+
+try:
+    import mlflow
+    HAS_MLFLOW = True
+except ImportError:
+    HAS_MLFLOW = False
 
 router = APIRouter(prefix="/api/genie")
 
@@ -42,10 +48,20 @@ def ask_genie(body: AskRequest):
     """Send a question to Genie and poll until the answer is ready."""
     if not GENIE_SPACE_ID:
         raise HTTPException(status_code=503, detail="GENIE_SPACE_ID not configured")
+
+    refresh_databricks_token()
+
+    # Wrap the entire Genie interaction in an MLflow trace
+    if HAS_MLFLOW:
+        return _ask_genie_traced(body)
+    return _ask_genie_impl(body)
+
+
+def _ask_genie_impl(body: AskRequest) -> dict:
+    """Core Genie ask implementation."""
     base = _base_url()
     headers = _headers()
 
-    # Start or continue conversation
     if body.conversation_id:
         url = f"{base}/conversations/{body.conversation_id}/messages"
     else:
@@ -62,7 +78,6 @@ def ask_genie(body: AskRequest):
     if not conversation_id or not message_id:
         return {"conversation_id": conversation_id, "status": "ERROR", "error": "Missing IDs"}
 
-    # Poll for result (up to 60s)
     poll_url = f"{base}/conversations/{conversation_id}/messages/{message_id}"
     for _ in range(30):
         time.sleep(2)
@@ -75,6 +90,23 @@ def ask_genie(body: AskRequest):
             return _format_response(msg, conversation_id, headers)
 
     return {"conversation_id": conversation_id, "status": "TIMEOUT", "text": "Query is still processing. Try again shortly."}
+
+
+def _ask_genie_traced(body: AskRequest) -> dict:
+    """Genie ask with MLflow trace span."""
+    with mlflow.start_span(name="genie_query", span_type="CHAIN") as span:
+        span.set_attributes({
+            "genie.space_id": GENIE_SPACE_ID,
+            "genie.question": body.question,
+            "genie.has_conversation": body.conversation_id is not None,
+        })
+        result = _ask_genie_impl(body)
+        span.set_attributes({
+            "genie.status": result.get("status", "UNKNOWN"),
+            "genie.has_sql": "sql" in result,
+            "genie.num_rows": len(result.get("rows", [])),
+        })
+        return result
 
 
 def _fetch_query_result(conversation_id: str, message_id: str, headers: dict) -> dict:
