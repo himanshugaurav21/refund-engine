@@ -36,10 +36,8 @@ async def lifespan(app: FastAPI):
             refresh_databricks_token()
             mlflow.set_tracking_uri("databricks")
             mlflow.set_experiment(experiment_name)
-            # Disable automatic tracing to prevent GCS artifact uploads that
-            # block for 30s+ from App containers. MlflowClient.start_trace()
-            # writes trace metadata via REST API independently.
-            mlflow.tracing.disable()
+            # MLflow 3.0: trace exporter uses REST API (not GCS artifacts),
+            # so we leave tracing enabled for MlflowClient-based spans.
             print(f"MLflow tracing enabled — experiment: {experiment_name}")
             print(f"DATABRICKS_HOST: {host}")
             print(f"MLflow version: {mlflow.__version__}")

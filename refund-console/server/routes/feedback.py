@@ -49,7 +49,7 @@ def _submit_feedback(refund_id: str, feedback_type: str, notes: str) -> dict:
         name="submit_feedback",
         inputs={"refund_id": refund_id, "feedback_type": feedback_type, "notes": notes[:200]},
     )
-    request_id = root.request_id
+    request_id = getattr(root, 'trace_id', None) or root.request_id
 
     try:
         result = _submit_feedback_with_spans(refund_id, feedback_type, notes,

@@ -33,7 +33,7 @@ def _do_action(refund_id: str, action: str, reason: str) -> dict:
         name="csr_action",
         inputs={"refund_id": refund_id, "action": action, "reason": reason},
     )
-    request_id = root.request_id
+    request_id = getattr(root, 'trace_id', None) or root.request_id
 
     try:
         result = _do_action_with_spans(refund_id, action, reason,

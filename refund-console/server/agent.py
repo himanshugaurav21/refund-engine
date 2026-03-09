@@ -29,7 +29,7 @@ def decide(refund_id: str) -> dict:
         name="refund_decisioning_pipeline",
         inputs={"refund_id": refund_id},
     )
-    request_id = root.request_id
+    request_id = getattr(root, 'trace_id', None) or root.request_id
 
     try:
         result = _decide_with_spans(refund_id, client, request_id, root.span_id)

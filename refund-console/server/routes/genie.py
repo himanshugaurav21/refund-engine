@@ -57,7 +57,7 @@ def _genie_query(question: str, conversation_id: str | None = None) -> dict:
         name="genie_query",
         inputs={"question": question, "conversation_id": conversation_id},
     )
-    request_id = root.request_id
+    request_id = getattr(root, 'trace_id', None) or root.request_id
 
     try:
         result = _genie_with_spans(question, conversation_id, base, headers,
