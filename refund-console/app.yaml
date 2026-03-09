@@ -18,3 +18,5 @@ env:
     value: 2dba0d7005ff019f
   - name: GENIE_SPACE_ID
     value: 01f11a3cd49319d1adad9cd327a5147e
+  - name: _MLFLOW_ENABLE_TRACE_V3_EXPORTER
+    value: "false"

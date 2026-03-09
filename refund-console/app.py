@@ -36,13 +36,13 @@ async def lifespan(app: FastAPI):
             refresh_databricks_token()
             mlflow.set_tracking_uri("databricks")
             mlflow.set_experiment(experiment_name)
-            mlflow.tracing.enable()
-            try:
-                mlflow.openai.autolog()
-            except Exception:
-                pass
+            # Disable automatic tracing to prevent GCS artifact uploads that
+            # block for 30s+ from App containers. MlflowClient.start_trace()
+            # writes trace metadata via REST API independently.
+            mlflow.tracing.disable()
             print(f"MLflow tracing enabled — experiment: {experiment_name}")
             print(f"DATABRICKS_HOST: {host}")
+            print(f"MLflow version: {mlflow.__version__}")
         except Exception as e:
             import traceback
             print(f"MLflow setup error (non-fatal): {e}")
